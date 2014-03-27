@@ -31,12 +31,21 @@
 
 #import <UIKit/UIKit.h>
 
+@class CHDigitInput;
+
+@protocol CHDigitInputDelegate <NSObject>
+
+- (void)digitInput:(CHDigitInput *)digitInput didClickCancel:(id)sender;
+
+@end
+
 @interface CHDigitInput : UIControl <UITextInputTraits, UIKeyInput>
 {
     
     @protected
     NSInteger currentIndex;         // The current active digitview index
     NSMutableArray *digitViews;     // array containt UILabels
+    NSMutableArray *digits;
     NSString *activeString;         // The current string representation of all digitviews
     NSMutableArray *bgImageViews;    // The background imageviews for all digitViews
 }
@@ -44,7 +53,8 @@
 @property (nonatomic, assign) NSInteger numberOfDigits;                     // number of digitViews
 @property (nonatomic, assign) NSInteger value;                              // value represented by the digitViews
 @property (nonatomic, assign) BOOL matchNumberOfDigitsWithValueLength;      // sets number of digits according to value legth
-
+@property (nonatomic, assign) id<CHDigitInputDelegate> delegate;
+@property (nonatomic, strong) UIButton *btnDone;
 
 //////// Digit View Appearance /////////
 
@@ -69,11 +79,13 @@
 @property (nonatomic, strong) UIColor *digitViewHighlightedShadowColor;
 @property (nonatomic, assign) CGSize digitViewHighlightedShadowOffset;
 
--(id)initWithNumberOfDigits:(NSInteger)digitCount;
+- (id)initWithNumberOfDigits:(NSInteger)digitCount;
 
 /*
  Redraws the control, needed after setting colors, fonts, and sizes
  */
--(void)redrawControl;
+- (void)redrawControl;
+
+- (void)addButtonToKeyboard;
 
 @end

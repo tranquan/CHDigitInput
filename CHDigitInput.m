@@ -14,7 +14,7 @@
 #define kDefaultHighlightedBackgroundColor [UIColor blueColor]
 #define kDefaultNormalBackgroundColor [UIColor greenColor]
 
-#define kDefaultHighlightedTextColor [UIColor whiteColor]
+#define kDefaultHighlightedTextColor [UIColor blackColor]
 #define kDefaultNormalTextColor [UIColor blackColor]
 
 #define kDefaultNormalShadowOffset CGSizeMake(0.0,1.0)
@@ -23,7 +23,7 @@
 #define kDefaultNormalShadowColor [UIColor clearColor]
 #define kDefaultHighlightedShadowColor [UIColor clearColor]
 
-#define kDefaultFont [UIFont boldSystemFontOfSize:30]
+#define kDefaultFont [UIFont boldSystemFontOfSize:15]
 
 #define kControlBackgroundColor [UIColor clearColor]
 #define kControlHighlightedBackgroundColor [UIColor clearColor]
@@ -34,7 +34,6 @@
 -(void)highlightIndex:(NSInteger)indexToHighlight;
 -(void)unhighlightAll;
 -(BOOL)setText:(NSString *)text ForIndex:(NSInteger)index;
-
 
 @end
 
@@ -99,12 +98,9 @@
 -(id)initWithNumberOfDigits:(NSInteger)digitCount
 {
     self = [self init];
-    
     if (self) {
-        
         [self setNumberOfDigits:digitCount];
     }
-    
     return self;
 }
 
@@ -114,7 +110,7 @@
 }
 
 - (void)setup
-{
+{    
     // setting a default background view
     
     _backgroundColor = kControlBackgroundColor;
@@ -128,6 +124,7 @@
     // creating the array that holds the digit views and the bg image views
     
     digitViews = [[NSMutableArray alloc] init];
+    digits = [[NSMutableArray alloc] init];
     bgImageViews = [[NSMutableArray alloc] init];
     
     // setting a dafault digitview appearance
@@ -164,9 +161,11 @@
         
         _placeHolderCharacter = [placeHolderCharacter substringWithRange:range];
 
-        @throw [NSException exceptionWithName:@"PlaceholderCharacterTooLong" reason:@"The Placeholder character must be an NSString with a maximum length of 1" userInfo:nil];
+        @throw [NSException exceptionWithName:@"PlaceholderCharacterTooLong"
+                                       reason:@"The Placeholder character must be an NSString with a maximum length of 1"
+                                     userInfo:nil];
         
-    }else {
+    } else {
         _placeHolderCharacter = placeHolderCharacter;
     }
     
@@ -189,7 +188,9 @@
     _numberOfDigits = numberOfDigits;
     
     if (numberOfDigits > 9) {
-        @throw [NSException exceptionWithName:@"NSRangeExeption" reason:@"To many digits for NSInteger" userInfo:nil];
+        @throw [NSException exceptionWithName:@"NSRangeExeption"
+                                       reason:@"To many digits for NSInteger"
+                                     userInfo:nil];
     }
     
     [self setupDigitViews];
@@ -233,11 +234,9 @@
             digitView.text = [valueString substringWithRange:range];
 
             stringIndex++;
-            
         }
         
         currentPos++;
-        
     }
 }
 
@@ -255,9 +254,7 @@
 // generate the digit views
 -(void)setupDigitViews
 {
-    
     // remove the old views
-    
     for (UIView *digitView in digitViews) {
         [digitView removeFromSuperview];
     }
@@ -307,7 +304,7 @@
         
         [self addSubview:newDigitView];
         [digitViews addObject:newDigitView];
-        
+        [digits addObject:@""];
     }
     
     [self setNeedsLayout];
@@ -329,7 +326,7 @@
             digitView.shadowOffset = _digitViewHighlightedShadowOffset;
             
             
-        }else {
+        } else {
             digitView.backgroundColor = _digitViewBackgroundColor;
             
             digitView.shadowColor = _digitViewShadowColor;
@@ -337,7 +334,6 @@
             
             digitView.highlighted = NO;
         }
-        
     }
 }
 
@@ -357,25 +353,31 @@
 // Set text for a given digitview index
 -(BOOL)setText:(NSString *)text ForIndex:(NSInteger)index
 {
-    if (!isdigit([text characterAtIndex:0]))
-        return NO;
+    if (text.length > 0) {
+        if (!isdigit([text characterAtIndex:0]))
+            return NO;
+    }
     
     UILabel *activeDigitView = [digitViews objectAtIndex:index];
+    [digits replaceObjectAtIndex:index withObject:text];
     
-    activeDigitView.text = text;
+    if (text.length == 0)
+        activeDigitView.text = @"";
+    else
+        activeDigitView.text = @"\u26AA";
     
     NSString *valueString = @"";
+    int t = 0;
     
-    for (UILabel *digitView in digitViews) {
-        
-        NSString *digitString = digitView.text;
-        
+    for (UILabel *digitView in digitViews)
+    {
+        NSString *digitString = [digits objectAtIndex:t];//digitView.text;
+        t++;
         if ([digitString isEqualToString:_placeHolderCharacter]) {
-            valueString = [valueString stringByAppendingString:@"0"];
-        }else {
+            valueString = [valueString stringByAppendingString:@""];
+        } else {
             valueString =[valueString stringByAppendingString:digitString];
         }
-        
     }
 
     activeString = valueString;
@@ -393,7 +395,6 @@
 // gets called when keyboard text is entered
 - (void)insertText:(NSString *)text
 {
-    
     // set the entered text in the digit view
     // at the current index
     
@@ -408,13 +409,21 @@
         // digits and are hiding the keyboard
         
         if (currentIndex >= _numberOfDigits) {
-            
-            [self resignFirstResponder];
+            currentIndex = _numberOfDigits-1;
+            [self performSelectorInBackground:@selector(_endEditing) withObject:nil];
             return;
         }
 
         [self highlightIndex:currentIndex];
     }
+}
+
+- (void)_endEditing
+{
+    usleep(500000);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self sendActionsForControlEvents:UIControlEventEditingDidEnd];
+    });
 }
 
 // get called when keboard delete button is pressed
@@ -423,37 +432,17 @@
 // the left
 - (void)deleteBackward
 {
-    
-    /*
-     for (int i = 0; i <= currentIndex; i++) {
-     NSLog(@"current index");
-     [self setText:_placeHolderCharacter ForIndex:i];
-     }
-     */
-    //currentIndex = 0;
-    
-    /*
-     if (currentIndex >= 1) {
-     
-     UILabel *previousDigitView = [digitViews objectAtIndex:(currentIndex-1)];
-     
-     if ([previousDigitView.text isEqualToString:_placeHolderCharacter]) {
-     [self setText:_placeHolderCharacter ForIndex:currentIndex];
-     return;
-     }
-     
-     }
-     */
+    if (currentIndex >= 0 && currentIndex < _numberOfDigits) {
+        [self setText:@"" ForIndex:currentIndex];
+    }
     
     currentIndex--;
     
     if (currentIndex <= 0) {
-        
         currentIndex = 0;
     }
     
     [self highlightIndex:currentIndex];
-    
 }
 
 -(BOOL)hasText
@@ -470,6 +459,46 @@
     return UIKeyboardTypeNumberPad;
 }
 
+- (void)addButtonToKeyboard
+{
+    // create custom button
+    if (self.btnDone == nil) {
+        self.btnDone = [[UIButton alloc] initWithFrame:CGRectMake(0, 163, 106, 53)];
+        [self.btnDone.titleLabel setFont:[UIFont boldSystemFontOfSize:13]];
+        [self.btnDone setTitle:@"CANCEL" forState:UIControlStateNormal];
+        [self.btnDone setTitleColor:UIColorFromRGB(0x313131, 1) forState:UIControlStateNormal];
+    }
+    else {
+        [self.btnDone setHidden:NO];
+    }
+    
+    [self.btnDone addTarget:self
+                     action:@selector(doneButtonClicked:)
+           forControlEvents:UIControlEventTouchUpInside];
+    
+    // locate keyboard view
+    UIWindow* tempWindow = [[[UIApplication sharedApplication] windows] objectAtIndex:1];
+    UIView* keyboard = nil;
+    for(int i=0; i<[tempWindow.subviews count]; i++) {
+        keyboard = [tempWindow.subviews objectAtIndex:i];
+        // keyboard found, add the button
+        if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 3.2) {
+            if([[keyboard description] hasPrefix:@"<UIPeripheralHost"] == YES)
+                [keyboard addSubview:self.btnDone ];
+        } else {
+            if([[keyboard description] hasPrefix:@"<UIKeyboard"] == YES)
+                [keyboard addSubview:self.btnDone ];
+        }
+    }
+}
+
+- (void)doneButtonClicked:(id)sender
+{
+    if ([self.delegate respondsToSelector:@selector(digitInput:didClickCancel:)]) {
+        [self.delegate digitInput:self didClickCancel:sender];
+    }
+}
+
 //////////////////// View Stuff and other internal stuff //////////////////
 #pragma mark - view stuff and other internal stuff
 
@@ -481,7 +510,6 @@
     
     CGFloat xOffset = 0;
     CGFloat digitWidth = (self.bounds.size.width-((_numberOfDigits+1)*kDefaultDigitPadding)) / (CGFloat)_numberOfDigits;
-    
     for (UIView *digitView in digitViews) {
         
         digitView.frame = CGRectMake(kDefaultDigitPadding+xOffset, kDefaultDigitPadding, digitWidth, self.bounds.size.height-2*kDefaultDigitPadding);
@@ -500,13 +528,9 @@
             bgDigitView.frame = CGRectMake(kDefaultDigitPadding+xOffset, kDefaultDigitPadding, digitWidth, self.bounds.size.height-2*kDefaultDigitPadding);
             
             xOffset = bgDigitView.frame.origin.x+bgDigitView.bounds.size.width;
-            
         }
     }
-    
-    
 }
-
 
 // always return yes
 -(BOOL)canBecomeFirstResponder
@@ -520,13 +544,11 @@
 // and hide keyboard
 -(BOOL)resignFirstResponder
 {
-    
     [self unhighlightAll];
     
-    if (self.highlighted) {
-        [self sendActionsForControlEvents:UIControlEventEditingDidEnd];
-        
-    }
+//    if (self.highlighted) {
+//        [self sendActionsForControlEvents:UIControlEventEditingDidEnd];
+//    }
     [self setHighlighted:NO];
     
     return [super resignFirstResponder];
@@ -535,34 +557,32 @@
 // determine active index and show up keyboard
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    UITouch *touch = [touches anyObject];
-    CGPoint touchPoint = [touch locationInView:self];
-    
-    
-    // TODO: ignore padding to have a bigger touch area
-    
-    // Check if a touch is inside a digitview
-    // if so set the currentIndex and show
-    // up the keyboard by becoming the first
-    // responder
-    
-    NSInteger touchedIndex = 0;
-    
-    for (UIView *digitView in digitViews) {
-        
-        if (CGRectContainsPoint(digitView.frame, touchPoint)) {
-            currentIndex = touchedIndex;
-            
-            [self highlightIndex:currentIndex];
-            
-            [self becomeFirstResponder];
-            break;
-        }
-        
-        touchedIndex++;
-        
-    }
-
+//    UITouch *touch = [touches anyObject];
+//    CGPoint touchPoint = [touch locationInView:self];
+//    
+//    
+//    // TODO: ignore padding to have a bigger touch area
+//    
+//    // Check if a touch is inside a digitview
+//    // if so set the currentIndex and show
+//    // up the keyboard by becoming the first
+//    // responder
+//    
+//    NSInteger touchedIndex = 0;
+//    
+//    for (UIView *digitView in digitViews) {
+//        
+//        if (CGRectContainsPoint(digitView.frame, touchPoint)) {
+//            currentIndex = touchedIndex;
+//            
+//            [self highlightIndex:currentIndex];
+//            
+//            [self becomeFirstResponder];
+//            break;
+//        }
+//        
+//        touchedIndex++;
+//    }
 }
 
 //////////////// UIControl Methods //////////////////
@@ -578,7 +598,7 @@
             digitView.alpha = 1.0;
         }
         
-    }else {
+    } else {
         for (UIView *digitView in digitViews) {
             digitView.alpha = 0.5;
         }
