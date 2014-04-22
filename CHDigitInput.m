@@ -263,6 +263,7 @@
         [bgView removeFromSuperview];
     }
     
+    currentIndex = 0;
     [digitViews removeAllObjects];
     [bgImageViews removeAllObjects];
     
@@ -489,6 +490,14 @@
             if([[keyboard description] hasPrefix:@"<UIKeyboard"] == YES)
                 [keyboard addSubview:self.btnDone ];
         }
+    }
+}
+
+- (void)clearDigits
+{
+    currentIndex = 0;
+    for (int i = 0; i < _numberOfDigits; i++) {
+        [self setText:@"" ForIndex:i];
     }
 }
 

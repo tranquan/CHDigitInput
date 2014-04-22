@@ -88,4 +88,6 @@
 
 - (void)addButtonToKeyboard;
 
+- (void)clearDigits;
+
 @end
